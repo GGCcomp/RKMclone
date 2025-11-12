@@ -31,7 +31,10 @@ const Homepage = () => {
       />
 
       {/* Mission Highlights */}
-      <MissionHighlights />
+      {/* <MissionHighlights /> */}
+      <div>
+        loading the data 
+      </div>
 
       {/* Milestones Section */}
       <MilestonesSection />

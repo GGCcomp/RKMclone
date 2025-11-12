@@ -38,9 +38,17 @@ const Footer = () => {
       return;
     }
 
-    const { data } = await axios.post("https://api.rashtriyakisanmanch.com/api/donate/create-order", { amount });
+    // old one 
+    // const { data } = await axios.post("https://api.rashtriyakisanmanch.com/api/donate/create-order", { amount });
 
+    // new one
+    const { data } = await axios.post("http://localhost:5001/api/donate/create-order", { amount });
+
+    // old one 
+    // const keyRes = await axios.get("https://api.rashtriyakisanmanch.com/getKey");
+    // new one
     const keyRes = await axios.get("https://api.rashtriyakisanmanch.com/getKey");
+    
     const key = keyRes.data;
 
     const options = {

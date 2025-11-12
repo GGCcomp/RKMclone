@@ -17,6 +17,16 @@ const MissionHighlights = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const handleItemClick = (item) => {
+  setModalContent(item);
+  setIsModalOpen(true);
+};
+
+const navigateToVisionPage = () => {
+  window.location.href = '/our-vision'; // or use Next.js router
+  // router.push('/our-vision');
+};
+
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -334,7 +344,7 @@ const MissionHighlights = () => {
                 onClick={() => navigateToVisionPage()}
                 className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-all"
               >
-                <span>{getTranslation('viewAll')}</span>
+               <span>{content[language].viewAll}</span>
                 <Icon name="ArrowRight" size={16} className="ml-2" />
               </button>
             </div>
@@ -344,7 +354,7 @@ const MissionHighlights = () => {
         {/* Call to Action */}
         <div className="text-center mt-16">
           <div className="inline-flex items-center space-x-2 text-primary font-medium cursor-pointer hover:text-secondary transition-colors duration-200">
-            <span>{getTranslation('learnMore')}</span>
+           <span>{content[language].learnMore}</span>
             <Icon name="ArrowRight" size={20} />
           </div>
         </div>

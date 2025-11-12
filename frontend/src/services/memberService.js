@@ -3,9 +3,16 @@ import { API_BASE_URL } from '../config/constants';
 
 const baseURL = `${API_BASE_URL}/api/members`;
 // Fallback URL for when local server is not available
-const fallbackURL = 'https://api.rashtriyakisanmanch.com/api/members';
+// ONLD ONe
+// const fallbackURL = 'https://api.rashtriyakisanmanch.com/api/members';
+// NEW ONEhttps://api.rashtriyakisanmanch.com
+const fallbackURL = 'http://localhost:5001/api/members';
 const pdfURL = `${API_BASE_URL}/api/pdf`;
-const fallbackPdfURL = 'https://api.rashtriyakisanmanch.com/api/pdf';
+
+// old one
+// const fallbackPdfURL = 'https://api.rashtriyakisanmanch.com/api/pdf';
+// new one 
+const fallbackPdfURL = 'http://localhost:5001/api/pdf';
 
 const memberService = {
   // Register a new member
