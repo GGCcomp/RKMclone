@@ -2,10 +2,12 @@ import axios from 'axios';
 
 // const API_URL = 'https://api.rashtriyakisanmanch.com';
 // new one
-const API_URL = 'http://localhost:5001';
+// const API_URL = 'http://localhost:5001';   
+
+import { API_BASE_URL } from '../config/constants';
 // old one
 // const API_URL = 'https://rashtriya-kishan-manch.onrender.com/';
-
+const API_URL = API_BASE_URL;
 const api = axios.create({
   baseURL: API_URL,
   headers: {
