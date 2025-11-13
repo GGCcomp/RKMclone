@@ -29,12 +29,16 @@ const getTeamMemberById = asyncHandler(async (req, res) => {
 const createTeamMember = asyncHandler(async (req, res) => {
   const { name, role, description, email, phone } = req.body;
 
-  if (!req.file) {
+  // Check for photo in req.files (from .fields() middleware)
+  const photoFile = req.files?.photo?.[0] || req.files?.image?.[0];
+  
+  if (!photoFile) {
     res.status(400);
     throw new Error('Photo is required for a team member.');
   }
-  const photoUrl = req.file.path; // Cloudinary URL
-  const photoPublicIdVal = req.file.filename; // Cloudinary public_id
+  
+  const photoUrl = photoFile.path; // Cloudinary URL
+  const photoPublicIdVal = photoFile.filename; // Cloudinary public_id
 
   const teamMember = new Team({
     name,
@@ -50,9 +54,6 @@ const createTeamMember = asyncHandler(async (req, res) => {
   res.status(201).json(createdTeamMember);
 });
 
-// @desc    Update a team member
-// @route   PUT /api/team/:id
-// @access  Private/Admin
 const updateTeamMember = asyncHandler(async (req, res) => {
   const { name, role, description, email, phone } = req.body;
   const teamMember = await Team.findById(req.params.id);
@@ -62,7 +63,10 @@ const updateTeamMember = asyncHandler(async (req, res) => {
     throw new Error('Team member not found');
   }
 
-  if (req.file) {
+  // Check for photo in req.files
+  const photoFile = req.files?.photo?.[0] || req.files?.image?.[0];
+  
+  if (photoFile) {
     // If there's an old photo, delete it from Cloudinary
     if (teamMember.photoPublicId) {
       try {
@@ -71,8 +75,8 @@ const updateTeamMember = asyncHandler(async (req, res) => {
         console.error('Cloudinary: Error deleting old team member photo:', err);
       }
     }
-    teamMember.photo = req.file.path; // New Cloudinary URL
-    teamMember.photoPublicId = req.file.filename; // New public_id
+    teamMember.photo = photoFile.path; // New Cloudinary URL
+    teamMember.photoPublicId = photoFile.filename; // New public_id
   }
 
   teamMember.name = name || teamMember.name;
