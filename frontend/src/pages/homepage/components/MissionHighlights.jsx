@@ -209,7 +209,7 @@ const MissionHighlights = () => {
       onClick={() => handleItemClick(project)}
     >
       <div className="relative overflow-hidden rounded-lg mb-4 h-40 w-full flex-shrink-0">
-        <Image
+        <Image 
           src={project.thumbnailPath || project.thumbnailUrl || project.coverImage || (project.gallery && project.gallery.length > 0 ? project.gallery[0].filePath : null) || '/assets/images/no_image.png'}
           alt={project.name || project.title || 'Project'}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"

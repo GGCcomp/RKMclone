@@ -38,7 +38,7 @@ const OurVisionSection = () => {
           projectService.getProjects(),
         ]);
 
-        console.log('Media response:', mediaRes);
+        console.log('Media response: this is all fincal data', mediaRes);
         setMediaItems(mediaRes.data || []);
         setPrograms(programsRes.data || []);
         setProjects(projectsRes.data || []);

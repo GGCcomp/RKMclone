@@ -21,7 +21,7 @@ const MilestonesSection = () => {
         const response = await getKeyMilestones();
 
         if (response && response.data) {
-          console.log("this is my data ", response);
+          console.log("this is my data milestone", response);
           // Process and format the timeline data
           const processedData = response.data.map(item => ({
             id: item._id,
@@ -167,16 +167,16 @@ const MilestonesSection = () => {
         <h3 className="text-xl font-heading font-semibold text-text-primary mb-3">
           <TranslateText>{milestone.title}</TranslateText>
         </h3>
-        <p className="text-sm text-text-secondary mb-4">
+        {/* <p className="text-sm text-text-secondary mb-4">
           <TranslateText>{milestone.description}</TranslateText>
-        </p>
+        </p> */}
 
         {/* Gallery Section - Always Visible */}
         {hasGallery && (
           <div className="mt-4">
             <div className="relative w-full max-w-md mx-auto aspect-[14/9] overflow-hidden rounded-lg">
               <Image
-                src={milestone.gallery[0]}
+                src={milestone.gallery[0].filePath}
                 alt={`${milestone.title} image`}
                 className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
               />
