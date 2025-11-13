@@ -104,6 +104,9 @@ const TimelineManagement = () => {
   const handleSubmitAdd = async (formData) => {
     try {
       console.log('Submitting timeline data...');
+        for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
       // FormData is already properly formatted by DynamicForm
       const result = await timelineService.createTimeline(formData);
       console.log('Timeline creation result:', result);

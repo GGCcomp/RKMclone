@@ -246,88 +246,126 @@ const DynamicForm = ({ fields = [], initialData, onSubmit, onCancel, isLoading, 
   }, [initialData]);
 
   const handleChange = (e) => {
-    const { name, value, type, files, checked } = e.target;
-    
-    if (!name) return; // Skip if field name is undefined
-    
-    console.log(`Field ${name} changed:`, type === 'file' ? 'File selected' : value);
-    
-    // Handle special dependencies between fields
-    if (name === 'type') {
-      // When type changes to video type, set a default uploadType
-      if (value === 'Documentary' || value === 'Video Series') {
-        setFormData(prev => ({ 
-          ...prev, 
-          [name]: value,
-          uploadType: prev.uploadType || 'Upload File' // Set default if not already set
-        }));
-        console.log('Updated form data after type change:', {...formData, [name]: value, uploadType: formData.uploadType || 'Upload File'});
-        return; // Early return since we've already set formData
-      }
-    } else if (name === 'uploadType') {
-      // Handle switch between Video Link and Upload File
-      console.log(`Upload type changed to: ${value}`);
-      
-      // Force an immediate state update for uploadType to ensure it's captured
-      const updatedFormData = {
-        ...formData,
+  const { name, value, type, files, checked } = e.target;
+  
+  if (!name) return;
+  
+  console.log(`Field ${name} changed:`, type === 'file' ? 'File selected' : value);
+  
+  // Handle special dependencies between fields
+  if (name === 'type') {
+    if (value === 'Documentary' || value === 'Video Series') {
+      setFormData(prev => ({ 
+        ...prev, 
         [name]: value,
-        // Clear videoLink if switching to Upload File
-        ...(value === 'Upload File' ? { videoLink: '' } : {})
-      };
-      
-      setFormData(updatedFormData);
-      console.log('Updated form data after uploadType change:', updatedFormData);
-      return; // Early return since we've already set formData
+        uploadType: prev.uploadType || 'Upload File'
+      }));
+      console.log('Updated form data after type change:', {...formData, [name]: value, uploadType: formData.uploadType || 'Upload File'});
+      return;
     }
-    
-    // Handle different input types
-    if (type === 'file') {
-      // Check if this is a multiple file field
-      if (e.target.multiple) {
-        // Multiple file handling code...
-      } else {
-        // Handle single file
-        if (files && files.length > 0) {
-          const file = files[0];
-          console.log(`Single file selected for ${name}:`, file.name);
+  } else if (name === 'uploadType') {
+    console.log(`Upload type changed to: ${value}`);
+    const updatedFormData = {
+      ...formData,
+      [name]: value,
+      ...(value === 'Upload File' ? { videoLink: '' } : {})
+    };
+    setFormData(updatedFormData);
+    console.log('Updated form data after uploadType change:', updatedFormData);
+    return;
+  }
+  
+  // Handle different input types
+  if (type === 'file') {
+    // Check if this is a multiple file field
+    if (e.target.multiple) {
+      // ===== FIXED MULTIPLE FILE HANDLING =====
+      if (files && files.length > 0) {
+        console.log(`Multiple files selected for ${name}:`, files.length, 'files');
+        
+        // Convert FileList to Array
+        const newFiles = Array.from(files);
+        
+        // Get existing files from accumulator
+        const existingFiles = filesAccumulator.current[name] || [];
+        
+        // Combine existing and new files
+        const allFiles = [...existingFiles, ...newFiles];
+        
+        // Check max count if specified
+        const field = safeFieldsConfig.find(f => f.name === name);
+        if (field?.maxCount && allFiles.length > field.maxCount) {
+          setFormError(`Maximum ${field.maxCount} images allowed`);
+          // Take only the first maxCount files
+          const limitedFiles = allFiles.slice(0, field.maxCount);
+          filesAccumulator.current[name] = limitedFiles;
           
-          // Check file size for mediafile (10MB limit)
-          if (name === 'mediafile') {
-            const fileSize = file.size / (1024 * 1024); // Convert to MB
-            if (fileSize > 10) {
-              setFormError('File size should be less than 10MB');
-              // Clear the file input
-              e.target.value = '';
-              return;
-            } else {
-              setFormError('');
-            }
-          }
+          // Update form data with files array
+          setFormData(prev => ({ ...prev, [name]: limitedFiles }));
           
-          // Update form data with the file
-          setFormData(prev => ({ ...prev, [name]: file }));
-          
-          // Create and set a preview URL
-          const previewUrl = URL.createObjectURL(file);
-          setPreviews(prev => ({
+          // Create preview URLs for the limited files
+          const previewUrls = limitedFiles.map(file => URL.createObjectURL(file));
+          setMultipleFiles(prev => ({
             ...prev,
-            [name]: previewUrl
+            [name]: previewUrls
           }));
         } else {
-          // No file selected (e.g., user canceled file dialog)
-          console.log(`No file selected for ${name}, preserving current state`);
+          // Store all files in accumulator
+          filesAccumulator.current[name] = allFiles;
+          
+          // Update form data with files array
+          setFormData(prev => ({ ...prev, [name]: allFiles }));
+          
+          // Create preview URLs for all files
+          const previewUrls = allFiles.map(file => URL.createObjectURL(file));
+          setMultipleFiles(prev => ({
+            ...prev,
+            [name]: previewUrls
+          }));
+          
+          setFormError(''); // Clear any previous error
         }
+        
+        console.log(`Total files for ${name}:`, allFiles.length);
       }
-    } else if (type === 'checkbox') {
-      // Handle checkbox values
-      setFormData(prev => ({ ...prev, [name]: checked }));
-      console.log(`Checkbox ${name} changed to:`, checked);
     } else {
-      // For all other inputs including select, text, etc.
-      setFormData(prev => ({ ...prev, [name]: value }));
+      // Handle single file
+      if (files && files.length > 0) {
+        const file = files[0];
+        console.log(`Single file selected for ${name}:`, file.name);
+        
+        // Check file size for mediafile (10MB limit)
+        if (name === 'mediafile') {
+          const fileSize = file.size / (1024 * 1024);
+          if (fileSize > 10) {
+            setFormError('File size should be less than 10MB');
+            e.target.value = '';
+            return;
+          } else {
+            setFormError('');
+          }
+        }
+        
+        // Update form data with the file
+        setFormData(prev => ({ ...prev, [name]: file }));
+        
+        // Create and set a preview URL
+        const previewUrl = URL.createObjectURL(file);
+        setPreviews(prev => ({
+          ...prev,
+          [name]: previewUrl
+        }));
+      } else {
+        console.log(`No file selected for ${name}, preserving current state`);
+      }
     }
-  };
+  } else if (type === 'checkbox') {
+    setFormData(prev => ({ ...prev, [name]: checked }));
+    console.log(`Checkbox ${name} changed to:`, checked);
+  } else {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }
+};
 
   // Add functionality to remove individual files from multiple selections
   const handleRemoveFile = (fieldName, index) => {
@@ -375,100 +413,111 @@ const DynamicForm = ({ fields = [], initialData, onSubmit, onCancel, isLoading, 
     });
   };
 
+
   const handleSubmit = (e) => {
-    e.preventDefault();
-    if (isLoading) return;
-    
-    // Clear any previous error
-    setFormError('');
-    
-    // Log the form data that will be submitted
-    console.log('Form data before submission:', formData);
-    console.log('Current uploadType value:', formData.uploadType);
-    
-    // Create a copy of the form data for processing
-    const processedFormData = { ...formData };
-    
-    // Special handling for upload type to ensure it's explicitly set
-    if (processedFormData.type === 'Documentary' || processedFormData.type === 'Video Series') {
-      // If uploadType is missing, set a default
-      if (!processedFormData.uploadType) {
-        processedFormData.uploadType = processedFormData.videoLink ? 'Video Link' : 'Upload File';
-        console.log('Set default uploadType in submission:', processedFormData.uploadType);
-      }
-      
-      // If uploadType is Upload File, ensure videoLink is cleared
-      if (processedFormData.uploadType === 'Upload File') {
-        processedFormData.videoLink = '';
-        console.log('Cleared videoLink for Upload File submission');
-      }
+  e.preventDefault();
+  if (isLoading) return;
+  
+  setFormError('');
+  
+  console.log('Form data before submission:', formData);
+  console.log('Files accumulator:', filesAccumulator.current);
+  
+  const processedFormData = { ...formData };
+  
+  // Special handling for upload type
+  if (processedFormData.type === 'Documentary' || processedFormData.type === 'Video Series') {
+    if (!processedFormData.uploadType) {
+      processedFormData.uploadType = processedFormData.videoLink ? 'Video Link' : 'Upload File';
+      console.log('Set default uploadType in submission:', processedFormData.uploadType);
     }
-
-    // Validate required fields
-    let missingFields = [];
     
-    safeFieldsConfig.forEach(field => {
-      // Skip field if it's conditionally shown and condition is not met
-      if (field.showIf && field.showIfValue) {
-        const dependentFieldValue = processedFormData[field.showIf];
-        
-        // If showIfValue is an array, check if the dependentFieldValue is included
-        if (Array.isArray(field.showIfValue)) {
-          if (!field.showIfValue.includes(dependentFieldValue)) {
-            return; // Skip this field if condition not met
-          }
-        } else {
-          // Otherwise just check for equality
-          if (dependentFieldValue !== field.showIfValue) {
-            return; // Skip this field if condition not met
-          }
+    if (processedFormData.uploadType === 'Upload File') {
+      processedFormData.videoLink = '';
+      console.log('Cleared videoLink for Upload File submission');
+    }
+  }
+
+  // Validate required fields
+  let missingFields = [];
+  
+  safeFieldsConfig.forEach(field => {
+    if (field.showIf && field.showIfValue) {
+      const dependentFieldValue = processedFormData[field.showIf];
+      
+      if (Array.isArray(field.showIfValue)) {
+        if (!field.showIfValue.includes(dependentFieldValue)) {
+          return;
+        }
+      } else {
+        if (dependentFieldValue !== field.showIfValue) {
+          return;
         }
       }
-      
-      if (field.required && !processedFormData[field.name]) {
-        missingFields.push(field.label || field.name);
-      }
-    });
-    
-    if (missingFields.length > 0) {
-      setFormError(`Required fields missing: ${missingFields.join(', ')}`);
-      return;
     }
     
-    // Special validation for video link
-    if (processedFormData.uploadType === 'Video Link' && !processedFormData.videoLink && 
-        (processedFormData.type === 'Documentary' || processedFormData.type === 'Video Series')) {
-      setFormError('Video Link is required when Upload Type is set to Video Link');
-      return;
+    if (field.required && !processedFormData[field.name]) {
+      missingFields.push(field.label || field.name);
     }
+  });
+  
+  if (missingFields.length > 0) {
+    setFormError(`Required fields missing: ${missingFields.join(', ')}`);
+    return;
+  }
+  
+  if (processedFormData.uploadType === 'Video Link' && !processedFormData.videoLink && 
+      (processedFormData.type === 'Documentary' || processedFormData.type === 'Video Series')) {
+    setFormError('Video Link is required when Upload Type is set to Video Link');
+    return;
+  }
 
-    // Create FormData instance for file uploads and form submission
-    const formDataToSubmit = new FormData();
-    
-    // Add all form data to the FormData object
-    for (const key in processedFormData) {
-      if (processedFormData[key] !== undefined && processedFormData[key] !== null) {
-        if (key === 'mediafile' || key === 'thumbnail' || key === 'gallery') {
-          // Handle file inputs
-          if (processedFormData[key] instanceof File) {
-            formDataToSubmit.append(key, processedFormData[key]);
-          }
-        } else {
-          // Handle all other inputs
+  // ===== FIXED FORMDATA CREATION =====
+  const formDataToSubmit = new FormData();
+  
+  // Add all form data to the FormData object
+  for (const key in processedFormData) {
+    if (processedFormData[key] !== undefined && processedFormData[key] !== null) {
+      // Handle single file inputs
+      if (key === 'mediafile' || key === 'thumbnail') {
+        if (processedFormData[key] instanceof File) {
           formDataToSubmit.append(key, processedFormData[key]);
+          console.log(`Appending single file for ${key}:`, processedFormData[key].name);
+        }
+      } 
+      // Handle multiple file inputs (gallery)
+      else if (key === 'gallery') {
+        // Get files from accumulator instead of processedFormData
+        const galleryFiles = filesAccumulator.current[key] || processedFormData[key];
+        
+        if (Array.isArray(galleryFiles) && galleryFiles.length > 0) {
+          // Append each file separately with the same field name
+          galleryFiles.forEach((file, index) => {
+            if (file instanceof File) {
+              formDataToSubmit.append('gallery', file);
+              console.log(`Appending gallery file ${index + 1}:`, file.name);
+            }
+          });
+        } else {
+          console.log('No gallery files to append');
         }
       }
+      // Handle all other inputs
+      else {
+        formDataToSubmit.append(key, processedFormData[key]);
+      }
     }
-    
-    // Log what we're submitting (for debugging)
-    console.log('FormData being submitted:');
-    for (const [key, value] of formDataToSubmit.entries()) {
-      console.log(`${key}: ${value instanceof File ? value.name : value}`);
-    }
-    
-    // Call the onSubmit function with the FormData
-    onSubmit(formDataToSubmit, { multipleFiles }, processedFormData);
-  };
+  }
+  
+  // Log what we're submitting
+  console.log('FormData being submitted:');
+  for (const [key, value] of formDataToSubmit.entries()) {
+    console.log(`${key}: ${value instanceof File ? value.name : value}`);
+  }
+  
+  // Call the onSubmit function with the FormData
+  onSubmit(formDataToSubmit, { multipleFiles }, processedFormData);
+};
 
   const renderField = (field) => {
     if (!field || !field.name) {
